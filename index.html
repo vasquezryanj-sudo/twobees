@@ -922,18 +922,34 @@ function subscribeRealtime() {
   console.log('[wall] subscribing to realtime...');
 
   realtimeChannel = sb.channel('wall-' + Date.now())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
-      console.log('[wall] realtime event received — posts:', payload.eventType);
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'posts' }, (payload) => {
+      console.log('[wall] realtime INSERT received — posts:', payload);
       loadPosts();
     })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, (payload) => {
-      console.log('[wall] realtime event received — reactions:', payload.eventType);
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'posts' }, (payload) => {
+      console.log('[wall] realtime UPDATE received — posts:', payload);
+      loadPosts();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'posts' }, (payload) => {
+      console.log('[wall] realtime DELETE received — posts:', payload);
+      loadPosts();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'reactions' }, (payload) => {
+      console.log('[wall] realtime INSERT received — reactions:', payload);
+      loadPosts();
+    })
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'reactions' }, (payload) => {
+      console.log('[wall] realtime UPDATE received — reactions:', payload);
+      loadPosts();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reactions' }, (payload) => {
+      console.log('[wall] realtime DELETE received — reactions:', payload);
       loadPosts();
     })
     .subscribe((status, err) => {
       console.log('[wall] realtime subscription status:', status, err || '');
       if (status === 'SUBSCRIBED') {
-        console.log('[wall] realtime connected successfully');
+        console.log('[wall] realtime connected successfully — listening for INSERT/UPDATE/DELETE on posts & reactions');
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
         console.warn('[wall] realtime failed, falling back to polling');
         startPolling();
