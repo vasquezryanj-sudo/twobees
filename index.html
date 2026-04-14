@@ -3,7 +3,30 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>our wall</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#f5f0e8">
+<link rel="apple-touch-icon" href="bee.jpg">
+<title>two bees</title>
+<script>
+  const manifest = JSON.stringify({
+    name: "two bees",
+    short_name: "two bees",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#f5f0e8",
+    theme_color: "#f5f0e8",
+    icons: [
+      { src: "bee.jpg", sizes: "192x192", type: "image/jpeg" },
+      { src: "bee.jpg", sizes: "512x512", type: "image/jpeg" }
+    ]
+  });
+  const blob = new Blob([manifest], { type: 'application/json' });
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = URL.createObjectURL(blob);
+  document.head.appendChild(link);
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -137,6 +160,17 @@
     border-bottom: 1px solid var(--linen-deep);
     padding: 0.75rem 1rem;
     display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .header-logo {
+    height: 28px;
+    width: auto;
+    mix-blend-mode: multiply;
+    border-radius: 2px;
   }
   .header-title {
     font-family: 'Caveat', cursive;
@@ -680,7 +714,10 @@
 <!-- APP -->
 <div id="app">
   <header class="app-header">
-    <div class="header-title">our wall</div>
+    <div class="header-left">
+      <img src="bee.jpg" alt="" class="header-logo">
+      <div class="header-title">two bees</div>
+    </div>
     <div class="header-identity">
       <span class="rt-dot"></span>
       <span id="identity-display"></span>
