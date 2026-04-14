@@ -187,12 +187,7 @@
 
   /* ── FEED ── */
   #feed {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
     padding: 1.25rem 0.6rem 7.5rem;
-    display: flex;
-    flex-direction: column;
     gap: 0;
   }
 
@@ -685,10 +680,114 @@
     animation: pulse 2s infinite;
   }
 
+  /* ── TAB BAR ── */
+  .tab-bar {
+    display: flex;
+    background: var(--linen);
+    border-bottom: 1px solid var(--linen-deep);
+    padding: 0 1rem;
+    gap: 0;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 0.55rem 0;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+  }
+  .tab-btn:hover { color: var(--ink-light); }
+  .tab-btn.active {
+    color: var(--terracotta);
+    border-bottom-color: var(--terracotta);
+  }
+
+  /* ── TAB VIEWS ── */
+  .tab-view { display: none; flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .tab-view.active { display: flex; flex-direction: column; }
+
+  /* ── DATE HEADERS ── */
+  .date-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 1rem 0.75rem 0.4rem;
+  }
+  .date-header:first-child { padding-top: 0.6rem; }
+
+  /* ── PHOTOS GRID ── */
+  #photos-view { padding: 0.5rem; padding-bottom: 2rem; }
+  .photos-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 3px;
+  }
+  .grid-item {
+    position: relative;
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 2px;
+    cursor: pointer;
+  }
+  .grid-item img, .grid-item video {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .grid-item .grid-overlay {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(58,48,40,0.5));
+    padding: 0.3rem 0.4rem;
+    display: flex; justify-content: space-between; align-items: flex-end;
+  }
+  .grid-overlay span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.5rem;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.05em;
+  }
+  .grid-item .video-badge {
+    position: absolute;
+    top: 0.3rem; right: 0.3rem;
+    background: rgba(58,48,40,0.6);
+    color: white;
+    font-size: 0.6rem;
+    padding: 0.1rem 0.3rem;
+    border-radius: 2px;
+  }
+
+  /* ── VOICE LIST ── */
+  #voice-view { padding: 0.5rem 0.75rem; padding-bottom: 2rem; }
+  .voice-list-item {
+    background: var(--paper-warm);
+    border-radius: 2px;
+    border-left: 2px solid var(--terracotta-light);
+    padding: 0.75rem 0.9rem;
+    margin-bottom: 0.4rem;
+    box-shadow: 1px 1px 2px rgba(58,48,40,0.08), 2px 3px 8px var(--card-shadow);
+  }
+  .voice-list-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--ink-faint);
+    margin-top: 0.35rem;
+    letter-spacing: 0.04em;
+  }
+
   /* ── SCROLLBAR ── */
-  #feed::-webkit-scrollbar { width: 4px; }
-  #feed::-webkit-scrollbar-track { background: transparent; }
-  #feed::-webkit-scrollbar-thumb { background: var(--linen-deep); border-radius: 4px; }
+  #feed::-webkit-scrollbar, .tab-view::-webkit-scrollbar { width: 4px; }
+  #feed::-webkit-scrollbar-track, .tab-view::-webkit-scrollbar-track { background: transparent; }
+  #feed::-webkit-scrollbar-thumb, .tab-view::-webkit-scrollbar-thumb { background: var(--linen-deep); border-radius: 4px; }
 </style>
 </head>
 <body>
@@ -724,12 +823,21 @@
     </div>
   </header>
 
-  <div id="feed">
+  <nav class="tab-bar">
+    <button class="tab-btn active" data-tab="wall" onclick="switchTab(this)">wall</button>
+    <button class="tab-btn" data-tab="photos" onclick="switchTab(this)">photos</button>
+    <button class="tab-btn" data-tab="voice" onclick="switchTab(this)">voice</button>
+  </nav>
+
+  <div id="feed" class="tab-view active">
     <div class="loading-state">
       <div class="loading-dots"><span></span><span></span><span></span></div>
       <div class="loading-label">getting two bees ready</div>
     </div>
   </div>
+
+  <div id="photos-view" class="tab-view"></div>
+  <div id="voice-view" class="tab-view"></div>
 
   <div id="compose-bar">
     <div class="compose-type-row">
@@ -792,6 +900,7 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 
 let currentUser = null;
 let currentType = 'text';
+let currentTab = 'wall';
 let mediaFile = null;
 let audioBlob = null;
 let mediaRecorder = null;
@@ -799,6 +908,8 @@ let recordingChunks = [];
 let isRecording = false;
 let openPickerPostId = null;
 let realtimeChannel = null;
+let cachedPosts = [];
+let cachedReactions = [];
 
 // ── IDENTITY
 function selectIdentity(btn) {
@@ -838,7 +949,9 @@ async function loadPosts() {
   const { data: posts, error } = await sb.from('posts').select('*').order('created_at', { ascending: true });
   if (error) { console.error(error); return; }
   const { data: reactions } = await sb.from('reactions').select('*');
-  renderFeed(posts, reactions || []);
+  cachedPosts = posts || [];
+  cachedReactions = reactions || [];
+  renderActiveTab();
 }
 
 function renderFeed(posts, reactions) {
@@ -942,6 +1055,115 @@ function buildLinkCardHtml(post) {
       <div class="link-title">${escHtml(preview.title || post.link_url)}</div>
     </div>
   </a>`;
+}
+
+// ── TABS
+function switchTab(btn) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = btn.dataset.tab;
+  document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
+  const viewId = { wall: 'feed', photos: 'photos-view', voice: 'voice-view' }[currentTab];
+  document.getElementById(viewId).classList.add('active');
+  document.getElementById('compose-bar').style.display = currentTab === 'wall' ? '' : 'none';
+  renderActiveTab();
+}
+
+function renderActiveTab() {
+  if (currentTab === 'wall') {
+    renderFeed(cachedPosts, cachedReactions);
+  } else if (currentTab === 'photos') {
+    renderPhotosView(cachedPosts);
+  } else if (currentTab === 'voice') {
+    renderVoiceView(cachedPosts);
+  }
+}
+
+function groupByDate(posts) {
+  const tz = getUserTimezone();
+  const groups = [];
+  let currentDay = null;
+  posts.forEach(p => {
+    const day = new Date(p.created_at).toLocaleDateString('en-US', {
+      weekday: 'long', month: 'short', day: 'numeric', timeZone: tz
+    });
+    if (day !== currentDay) {
+      currentDay = day;
+      groups.push({ label: day, posts: [] });
+    }
+    groups[groups.length - 1].posts.push(p);
+  });
+  return groups;
+}
+
+function renderPhotosView(posts) {
+  const view = document.getElementById('photos-view');
+  const media = posts.filter(p => p.type === 'photo' || p.type === 'video')
+    .slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!media.length) {
+    view.innerHTML = `<div class="empty-state">
+      <div class="empty-pin"></div>
+      <p>no photos yet</p>
+    </div>`;
+    return;
+  }
+  const groups = groupByDate(media.slice().reverse()).reverse();
+  let html = '';
+  groups.forEach(g => {
+    html += `<div class="date-header">${g.label}</div>`;
+    html += '<div class="photos-grid">';
+    g.posts.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).forEach(p => {
+      const time = formatTime(p.created_at);
+      if (p.type === 'video') {
+        html += `<div class="grid-item">
+          <video src="${p.media_url}" playsinline muted preload="metadata"></video>
+          <div class="video-badge">▶</div>
+          <div class="grid-overlay"><span>${p.author}</span><span>${time}</span></div>
+        </div>`;
+      } else {
+        html += `<div class="grid-item">
+          <img src="${p.media_url}" alt="" loading="lazy">
+          <div class="grid-overlay"><span>${p.author}</span><span>${time}</span></div>
+        </div>`;
+      }
+    });
+    html += '</div>';
+  });
+  view.innerHTML = html;
+}
+
+function renderVoiceView(posts) {
+  const view = document.getElementById('voice-view');
+  const voices = posts.filter(p => p.type === 'voice')
+    .slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (!voices.length) {
+    view.innerHTML = `<div class="empty-state">
+      <div class="empty-pin"></div>
+      <p>no voice notes yet</p>
+    </div>`;
+    return;
+  }
+  const groups = groupByDate(voices.slice().reverse()).reverse();
+  let html = '';
+  groups.forEach(g => {
+    html += `<div class="date-header">${g.label}</div>`;
+    g.posts.slice().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)).forEach(p => {
+      const bars = Array.from({length: 20}, (_, i) => {
+        const h = 20 + Math.sin(i * 0.8 + (p.id.charCodeAt(0) || 0)) * 14;
+        return `<div class="voice-bar" style="height:${h}px"></div>`;
+      }).join('');
+      const time = formatTime(p.created_at);
+      html += `<div class="voice-list-item">
+        <div class="voice-inner">
+          <button class="voice-play" onclick="playVoice(this,'${p.media_url}')">▶</button>
+          <div class="voice-waveform">${bars}</div>
+          <span class="voice-time">0:00</span>
+        </div>
+        <div class="voice-list-meta">${p.author} · ${time}</div>
+      </div>`;
+    });
+  });
+  view.innerHTML = html;
 }
 
 // ── REALTIME
