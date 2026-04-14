@@ -581,24 +581,64 @@
   /* ── LOADING ── */
   .loading-state {
     text-align: center;
-    padding: 3rem 1rem;
-    font-family: 'DM Mono', monospace;
-    font-size: 0.7rem;
+    padding: 4rem 1rem 3rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  .loading-dots {
+    display: flex;
+    gap: 0.45rem;
+  }
+  .loading-dots span {
+    width: 7px; height: 7px;
+    background: var(--terracotta);
+    border-radius: 50%;
+    animation: loadDot 1.4s ease-in-out infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.15s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.3s; }
+  @keyframes loadDot {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1); }
+  }
+  .loading-label {
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
     color: var(--ink-faint);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 
   /* ── EMPTY STATE ── */
   .empty-state {
     text-align: center;
-    padding: 4rem 2rem;
+    padding: 5rem 2rem 4rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .empty-pin {
+    width: 10px; height: 12px;
+    background: var(--terracotta);
+    border-radius: 50% 50% 2px 2px;
+    opacity: 0.5;
+    margin-bottom: 0.5rem;
   }
   .empty-state p {
     font-family: 'Caveat', cursive;
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     color: var(--ink-faint);
     line-height: 1.5;
+  }
+  .empty-state .empty-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    opacity: 0.7;
   }
 
   /* ── REALTIME INDICATOR ── */
@@ -648,7 +688,10 @@
   </header>
 
   <div id="feed">
-    <div class="loading-state">loading your wall…</div>
+    <div class="loading-state">
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <div class="loading-label">getting your wall ready</div>
+    </div>
   </div>
 
   <div id="compose-bar">
@@ -706,7 +749,9 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 const PASSPHRASE = 'twobees';
 const EMOJIS = ['❤️','😂','😢','😍','😮','🔥','✨','🥺','😭','💛'];
 
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+  realtime: { params: { eventsPerSecond: 10 } }
+});
 
 let currentUser = null;
 let currentType = 'text';
@@ -716,6 +761,7 @@ let mediaRecorder = null;
 let recordingChunks = [];
 let isRecording = false;
 let openPickerPostId = null;
+let realtimeChannel = null;
 
 // ── IDENTITY
 function selectIdentity(btn) {
@@ -761,7 +807,11 @@ async function loadPosts() {
 function renderFeed(posts, reactions) {
   const feed = document.getElementById('feed');
   if (!posts.length) {
-    feed.innerHTML = '<div class="empty-state"><p>your wall is empty.<br>post something ✦</p></div>';
+    feed.innerHTML = `<div class="empty-state">
+      <div class="empty-pin"></div>
+      <p>nothing here yet —<br>leave the first note</p>
+      <span class="empty-sub">your wall is waiting</span>
+    </div>`;
     return;
   }
   feed.innerHTML = '';
@@ -858,10 +908,46 @@ function buildLinkCardHtml(post) {
 }
 
 // ── REALTIME
+let pollInterval = null;
+
 function subscribeRealtime() {
-  sb.channel('wall').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => loadPosts())
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, () => loadPosts())
-    .subscribe();
+  // Clean up any existing subscription
+  if (realtimeChannel) {
+    console.log('[wall] removing previous realtime channel');
+    sb.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+  }
+  if (pollInterval) { clearInterval(pollInterval); pollInterval = null; }
+
+  console.log('[wall] subscribing to realtime...');
+
+  realtimeChannel = sb.channel('wall-' + Date.now())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, (payload) => {
+      console.log('[wall] realtime event received — posts:', payload.eventType);
+      loadPosts();
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, (payload) => {
+      console.log('[wall] realtime event received — reactions:', payload.eventType);
+      loadPosts();
+    })
+    .subscribe((status, err) => {
+      console.log('[wall] realtime subscription status:', status, err || '');
+      if (status === 'SUBSCRIBED') {
+        console.log('[wall] realtime connected successfully');
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn('[wall] realtime failed, falling back to polling');
+        startPolling();
+      }
+    });
+}
+
+function startPolling() {
+  if (pollInterval) return;
+  console.log('[wall] starting poll fallback (every 5s)');
+  pollInterval = setInterval(() => {
+    console.log('[wall] poll tick');
+    loadPosts();
+  }, 5000);
 }
 
 // ── COMPOSE TYPE SWITCH
@@ -889,6 +975,7 @@ document.getElementById('text-compose').style.display = 'flex';
 
 // ── SUBMIT POST
 async function submitPost() {
+  console.log('[wall] submitPost called, type:', currentType);
   const tilt = (Math.random() * 4 - 2).toFixed(2);
   const xOff = (Math.random() * 10 - 5).toFixed(2);
   let postData = { author: currentUser, rotation: parseFloat(tilt), x_offset: parseFloat(xOff) };
@@ -926,7 +1013,9 @@ async function submitPost() {
     postData.type = 'voice'; postData.media_url = urlData.publicUrl;
   }
 
-  await sb.from('posts').insert([postData]);
+  const { data: insertData, error: insertErr } = await sb.from('posts').insert([postData]).select();
+  console.log('[wall] insert result:', JSON.stringify({ data: insertData, error: insertErr }));
+  if (insertErr) { console.error('[wall] insert failed:', insertErr); alert('Post failed: ' + insertErr.message); return; }
   resetCompose();
 }
 
