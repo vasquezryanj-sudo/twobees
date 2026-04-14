@@ -1200,14 +1200,25 @@ function scrollToBottom() {
   feed.scrollTop = feed.scrollHeight;
 }
 
+function getUserTimezone() {
+  const zones = { Ryan: 'America/New_York', Joy: 'Europe/London' };
+  return zones[currentUser] || Intl.DateTimeFormat().resolvedOptions().timeZone;
+}
+
 function formatTime(ts) {
   const d = new Date(ts);
   const now = new Date();
   const diff = now - d;
+  const fiveHours = 5 * 3600000;
   if (diff < 60000) return 'just now';
   if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
-  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diff < fiveHours) return `${Math.floor(diff/3600000)}h ago`;
+  const tz = getUserTimezone();
+  return d.toLocaleString('en-US', {
+    month: 'short', day: 'numeric',
+    hour: 'numeric', minute: '2-digit',
+    hour12: true, timeZone: tz
+  });
 }
 
 function escHtml(str) {
