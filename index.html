@@ -695,7 +695,7 @@
 
 <!-- LOGIN -->
 <div id="login-screen">
-  <div class="login-title">our wall ✦</div>
+  <div class="login-title">two bees ✦</div>
   <div class="login-sub">a shared space</div>
 
   <div class="identity-row">
@@ -706,7 +706,7 @@
   <div class="passphrase-row">
     <input type="password" id="passphrase-input" placeholder="passphrase" autocomplete="off"
       onkeydown="if(event.key==='Enter') attemptLogin()">
-    <button class="login-btn" onclick="attemptLogin()">enter our wall →</button>
+    <button class="login-btn" onclick="attemptLogin()">enter two bees →</button>
     <span class="login-error" id="login-error"></span>
   </div>
 </div>
@@ -727,7 +727,7 @@
   <div id="feed">
     <div class="loading-state">
       <div class="loading-dots"><span></span><span></span><span></span></div>
-      <div class="loading-label">getting your wall ready</div>
+      <div class="loading-label">getting two bees ready</div>
     </div>
   </div>
 
@@ -847,7 +847,7 @@ function renderFeed(posts, reactions) {
     feed.innerHTML = `<div class="empty-state">
       <div class="empty-pin"></div>
       <p>nothing here yet —<br>leave the first note</p>
-      <span class="empty-sub">your wall is waiting</span>
+      <span class="empty-sub">two bees is waiting</span>
     </div>`;
     return;
   }
