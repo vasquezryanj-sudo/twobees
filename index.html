@@ -1,0 +1,1103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>our wall</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Mono:wght@300;400&family=Caveat:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --linen: #f5f0e8;
+    --linen-dark: #ede6d6;
+    --linen-deep: #d9cfc0;
+    --terracotta: #c8674a;
+    --terracotta-light: #e8a090;
+    --terracotta-pale: #f2ddd8;
+    --ink: #3a3028;
+    --ink-light: #6b5e52;
+    --ink-faint: #a89888;
+    --paper: #faf7f2;
+    --paper-warm: #f7f2e8;
+    --pin-shadow: rgba(58,48,40,0.25);
+    --card-shadow: rgba(58,48,40,0.12);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    height: 100%;
+    height: 100dvh;
+    background: var(--linen);
+    font-family: 'Lora', Georgia, serif;
+    color: var(--ink);
+    overscroll-behavior: none;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    position: fixed; inset: 0; z-index: 100;
+    background: var(--linen);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 2rem;
+    transition: opacity 0.4s ease;
+  }
+  #login-screen.hide { opacity: 0; pointer-events: none; }
+
+  .login-title {
+    font-family: 'Caveat', cursive;
+    font-size: 2.8rem;
+    color: var(--terracotta);
+    margin-bottom: 0.25rem;
+    letter-spacing: 0.02em;
+  }
+  .login-sub {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.15em;
+    margin-bottom: 2.5rem;
+    text-transform: uppercase;
+  }
+
+  .identity-row {
+    display: flex; gap: 1rem; margin-bottom: 2rem;
+  }
+  .identity-btn {
+    padding: 0.75rem 1.5rem;
+    border: 1.5px solid var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    font-family: 'Caveat', cursive;
+    font-size: 1.3rem;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .identity-btn:hover { border-color: var(--terracotta-light); color: var(--terracotta); }
+  .identity-btn.selected {
+    border-color: var(--terracotta);
+    background: var(--terracotta-pale);
+    color: var(--terracotta);
+  }
+
+  .passphrase-row {
+    display: flex; flex-direction: column; align-items: center; gap: 0.75rem;
+    width: 100%; max-width: 280px;
+  }
+  .passphrase-row input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 1.5px solid var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--ink);
+    text-align: center;
+    letter-spacing: 0.1em;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .passphrase-row input:focus { border-color: var(--terracotta); }
+  .passphrase-row input.error { border-color: #c04040; }
+
+  .login-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--terracotta);
+    color: var(--paper);
+    border: none;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .login-btn:hover { background: #b5593e; }
+  .login-error {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: #c04040;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── APP SHELL ── */
+  #app { display: none; flex-direction: column; height: 100vh; height: 100dvh; }
+  #app.visible { display: flex; }
+
+  /* ── HEADER ── */
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    background: var(--linen);
+    border-bottom: 1px solid var(--linen-deep);
+    padding: 0.75rem 1rem;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-title {
+    font-family: 'Caveat', cursive;
+    font-size: 1.6rem;
+    color: var(--terracotta);
+  }
+  .header-identity {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--ink-faint);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+
+  /* ── FEED ── */
+  #feed {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 1.25rem 0.6rem 7.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  /* ── POST CARDS ── */
+  .post-wrapper {
+    display: flex;
+    margin-bottom: -0.6rem;
+    padding-top: 1rem;
+    position: relative;
+  }
+  .post-wrapper:first-child { padding-top: 0.5rem; }
+  .post-wrapper:last-child { margin-bottom: 0; }
+  .post-wrapper.mine { justify-content: flex-end; }
+  .post-wrapper.theirs { justify-content: flex-start; }
+
+  .post-card {
+    position: relative;
+    max-width: 85%;
+    transition: transform 0.2s;
+  }
+
+  /* Slight random tilt — applied via inline style */
+
+  /* ── STICKY NOTE (text) ── */
+  .note-card {
+    background: var(--paper-warm);
+    padding: 1.1rem 1rem 0.9rem;
+    border-radius: 2px;
+    border-bottom: 1px solid rgba(58,48,40,0.06);
+    box-shadow:
+      1px 1px 2px rgba(58,48,40,0.08),
+      2px 3px 8px var(--card-shadow),
+      4px 6px 20px rgba(58,48,40,0.10);
+    min-width: 140px;
+    max-width: 280px;
+    font-family: 'Caveat', cursive;
+    font-size: 1.15rem;
+    line-height: 1.5;
+    color: var(--ink);
+    position: relative;
+  }
+  .note-card::before {
+    content: '';
+    position: absolute;
+    top: -8px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 16px;
+    background: var(--terracotta);
+    border-radius: 50% 50% 2px 2px;
+    box-shadow: 0 2px 4px var(--pin-shadow);
+    opacity: 0.85;
+    z-index: 1;
+  }
+  .note-card .tape {
+    position: absolute;
+    top: -6px; left: 50%; transform: translateX(-50%);
+    width: 44px; height: 12px;
+    background: rgba(200, 103, 74, 0.18);
+    border-radius: 1px;
+    z-index: 1;
+  }
+
+  /* ── POLAROID (photo/video) ── */
+  .polaroid-card {
+    background: #ffffff;
+    padding: 0.5rem 0.5rem 1.6rem;
+    border: 1px solid rgba(58,48,40,0.04);
+    box-shadow:
+      1px 1px 2px rgba(58,48,40,0.06),
+      2px 3px 10px var(--card-shadow),
+      5px 8px 24px rgba(58,48,40,0.10);
+    border-radius: 2px;
+    position: relative;
+    max-width: 260px;
+  }
+  .polaroid-card::before {
+    content: '';
+    position: absolute;
+    top: -9px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 16px;
+    background: var(--terracotta);
+    border-radius: 50% 50% 2px 2px;
+    box-shadow: 0 2px 4px var(--pin-shadow);
+    opacity: 0.85;
+    z-index: 1;
+  }
+  .polaroid-img {
+    width: 100%;
+    display: block;
+    border-radius: 1px;
+    max-height: 260px;
+    object-fit: cover;
+  }
+  .polaroid-video {
+    width: 100%;
+    display: block;
+    border-radius: 1px;
+    max-height: 220px;
+  }
+  .polaroid-caption {
+    font-family: 'Caveat', cursive;
+    font-size: 0.95rem;
+    color: var(--ink-light);
+    text-align: center;
+    padding-top: 0.5rem;
+    min-height: 1.4rem;
+  }
+
+  /* ── LINK CARD ── */
+  .link-card {
+    background: var(--paper);
+    border: 1px solid var(--linen-deep);
+    border-radius: 4px;
+    box-shadow:
+      1px 1px 2px rgba(58,48,40,0.06),
+      2px 3px 10px var(--card-shadow),
+      4px 6px 18px rgba(58,48,40,0.08);
+    max-width: 260px;
+    position: relative;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+  }
+  .link-card::before {
+    content: '';
+    position: absolute;
+    top: -9px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 16px;
+    background: var(--terracotta);
+    border-radius: 50% 50% 2px 2px;
+    box-shadow: 0 2px 4px var(--pin-shadow);
+    opacity: 0.85;
+    z-index: 1;
+  }
+  .link-preview-img {
+    width: 100%; height: 100px;
+    object-fit: cover;
+    display: block;
+    border-radius: 4px 4px 0 0;
+  }
+  .link-preview-img.hidden { display: none; }
+  .link-info { padding: 0.6rem 0.75rem 0.7rem; }
+  .link-domain {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--terracotta);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.2rem;
+  }
+  .link-title {
+    font-family: 'Lora', serif;
+    font-size: 0.82rem;
+    color: var(--ink);
+    line-height: 1.35;
+  }
+
+  /* ── VOICE NOTE ── */
+  .voice-card {
+    background: var(--paper-warm);
+    padding: 0.9rem 1rem;
+    border-radius: 2px;
+    border-left: 2px solid var(--terracotta-light);
+    box-shadow:
+      1px 1px 2px rgba(58,48,40,0.08),
+      2px 3px 8px var(--card-shadow),
+      4px 6px 20px rgba(58,48,40,0.10);
+    min-width: 180px;
+    position: relative;
+  }
+  .voice-card::before {
+    content: '';
+    position: absolute;
+    top: -9px; left: 50%; transform: translateX(-50%);
+    width: 14px; height: 16px;
+    background: var(--terracotta);
+    border-radius: 50% 50% 2px 2px;
+    box-shadow: 0 2px 4px var(--pin-shadow);
+    opacity: 0.85;
+    z-index: 1;
+  }
+  .voice-inner {
+    display: flex; align-items: center; gap: 0.7rem;
+  }
+  .voice-play {
+    width: 36px; height: 36px;
+    background: var(--terracotta);
+    border: none; border-radius: 50%;
+    color: white; font-size: 0.9rem;
+    cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+  .voice-play:hover { background: #b5593e; }
+  .voice-waveform {
+    flex: 1; height: 28px;
+    display: flex; align-items: center; gap: 2px;
+  }
+  .voice-bar {
+    flex: 1; background: var(--linen-deep);
+    border-radius: 2px; min-height: 4px;
+    transition: background 0.1s;
+  }
+  .voice-bar.active { background: var(--terracotta-light); }
+  .voice-time {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--ink-faint);
+    white-space: nowrap;
+  }
+
+  /* ── TIMESTAMP & AUTHOR ── */
+  .post-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.06em;
+    margin-top: 0.25rem;
+    padding: 0 0.25rem;
+  }
+  .post-wrapper.mine .post-meta { text-align: right; }
+  .post-wrapper.theirs .post-meta { text-align: left; }
+
+  /* ── REACTIONS ── */
+  .reactions-row {
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+    margin-top: 0.25rem;
+    padding: 0 0.1rem;
+  }
+  .post-wrapper.mine .reactions-row { justify-content: flex-end; }
+  .reaction-chip {
+    background: var(--paper);
+    border: 1px solid var(--linen-deep);
+    border-radius: 20px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; gap: 0.2rem;
+    user-select: none;
+  }
+  .reaction-chip:hover { border-color: var(--terracotta-light); background: var(--terracotta-pale); }
+  .reaction-chip.mine { border-color: var(--terracotta); background: var(--terracotta-pale); }
+  .reaction-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--ink-light);
+  }
+  .add-reaction {
+    background: transparent;
+    border: 1px dashed var(--linen-deep);
+    border-radius: 20px;
+    padding: 0.15rem 0.45rem;
+    font-size: 0.75rem;
+    cursor: pointer;
+    color: var(--ink-faint);
+    transition: all 0.15s;
+  }
+  .add-reaction:hover { border-color: var(--terracotta-light); color: var(--terracotta); }
+
+  /* ── EMOJI PICKER ── */
+  .emoji-picker {
+    position: absolute;
+    background: var(--paper);
+    border: 1px solid var(--linen-deep);
+    border-radius: 8px;
+    padding: 0.5rem;
+    box-shadow: 0 4px 20px var(--card-shadow);
+    z-index: 200;
+    display: flex; flex-wrap: wrap; gap: 0.3rem;
+    width: 200px;
+    bottom: calc(100% + 6px);
+  }
+  .post-wrapper.mine .emoji-picker { right: 0; }
+  .post-wrapper.theirs .emoji-picker { left: 0; }
+  .emoji-opt {
+    font-size: 1.3rem; cursor: pointer;
+    padding: 0.15rem 0.25rem;
+    border-radius: 4px;
+    transition: background 0.1s;
+  }
+  .emoji-opt:hover { background: var(--terracotta-pale); }
+
+  /* ── COMPOSE BAR ── */
+  #compose-bar {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    background: var(--linen);
+    border-top: 1px solid var(--linen-deep);
+    padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
+    transition: transform 0.15s ease;
+  }
+
+  .compose-type-row {
+    display: flex; gap: 0.5rem; margin-bottom: 0.5rem;
+  }
+  .type-btn {
+    background: none; border: none;
+    font-size: 1.1rem; cursor: pointer;
+    padding: 0.25rem 0.3rem;
+    border-radius: 4px;
+    opacity: 0.5;
+    transition: all 0.15s;
+  }
+  .type-btn:hover, .type-btn.active { opacity: 1; background: var(--terracotta-pale); }
+
+  .compose-input-row {
+    display: flex; gap: 0.5rem; align-items: flex-end;
+  }
+  #compose-text {
+    flex: 1;
+    border: 1.5px solid var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 0.6rem 0.75rem;
+    font-family: 'Caveat', cursive;
+    font-size: 1.05rem;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    min-height: 42px;
+    max-height: 120px;
+    transition: border-color 0.2s;
+    line-height: 1.4;
+  }
+  #compose-text:focus { border-color: var(--terracotta); }
+  #compose-text::placeholder { color: var(--ink-faint); }
+
+  .send-btn {
+    width: 42px; height: 42px; flex-shrink: 0;
+    background: var(--terracotta);
+    border: none; border-radius: 4px;
+    color: white; font-size: 1rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s;
+  }
+  .send-btn:hover { background: #b5593e; }
+  .send-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* Link compose */
+  #link-compose { display: none; flex-direction: column; gap: 0.4rem; }
+  #link-compose.active { display: flex; }
+  #link-url-input {
+    border: 1.5px solid var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: var(--ink);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  #link-url-input:focus { border-color: var(--terracotta); }
+
+  /* Media upload */
+  #media-compose { display: none; flex-direction: column; gap: 0.4rem; }
+  #media-compose.active { display: flex; }
+  #media-file { display: none; }
+  .media-upload-label {
+    display: flex; align-items: center; gap: 0.5rem;
+    border: 1.5px dashed var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    transition: border-color 0.2s, color 0.2s;
+  }
+  .media-upload-label:hover { border-color: var(--terracotta); color: var(--terracotta); }
+  #media-preview { max-height: 80px; border-radius: 3px; display: none; }
+  #caption-input {
+    border: 1.5px solid var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    font-family: 'Caveat', cursive;
+    font-size: 1rem;
+    color: var(--ink);
+    outline: none;
+  }
+
+  /* Voice compose */
+  #voice-compose { display: none; flex-direction: column; gap: 0.4rem; }
+  #voice-compose.active { display: flex; }
+  .record-btn {
+    display: flex; align-items: center; gap: 0.6rem;
+    border: 1.5px solid var(--linen-deep);
+    background: var(--paper);
+    border-radius: 4px;
+    padding: 0.6rem 0.75rem;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.05em;
+    transition: all 0.2s;
+  }
+  .record-btn.recording {
+    border-color: #c04040;
+    color: #c04040;
+    background: #fff5f5;
+  }
+  .record-dot {
+    width: 8px; height: 8px;
+    background: currentColor;
+    border-radius: 50%;
+  }
+  .record-btn.recording .record-dot {
+    animation: pulse 1s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* ── LOADING ── */
+  .loading-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--ink-faint);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+  .empty-state p {
+    font-family: 'Caveat', cursive;
+    font-size: 1.4rem;
+    color: var(--ink-faint);
+    line-height: 1.5;
+  }
+
+  /* ── REALTIME INDICATOR ── */
+  .rt-dot {
+    width: 6px; height: 6px;
+    background: #7cb87c;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.3rem;
+    animation: pulse 2s infinite;
+  }
+
+  /* ── SCROLLBAR ── */
+  #feed::-webkit-scrollbar { width: 4px; }
+  #feed::-webkit-scrollbar-track { background: transparent; }
+  #feed::-webkit-scrollbar-thumb { background: var(--linen-deep); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-title">our wall ✦</div>
+  <div class="login-sub">a shared space</div>
+
+  <div class="identity-row">
+    <button class="identity-btn" data-name="Ryan" onclick="selectIdentity(this)">Ryan</button>
+    <button class="identity-btn" data-name="Joy" onclick="selectIdentity(this)">Joy</button>
+  </div>
+
+  <div class="passphrase-row">
+    <input type="password" id="passphrase-input" placeholder="passphrase" autocomplete="off"
+      onkeydown="if(event.key==='Enter') attemptLogin()">
+    <button class="login-btn" onclick="attemptLogin()">enter our wall →</button>
+    <span class="login-error" id="login-error"></span>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="app-header">
+    <div class="header-title">our wall</div>
+    <div class="header-identity">
+      <span class="rt-dot"></span>
+      <span id="identity-display"></span>
+    </div>
+  </header>
+
+  <div id="feed">
+    <div class="loading-state">loading your wall…</div>
+  </div>
+
+  <div id="compose-bar">
+    <div class="compose-type-row">
+      <button class="type-btn active" data-type="text" onclick="switchType(this)" title="Note">📝</button>
+      <button class="type-btn" data-type="photo" onclick="switchType(this)" title="Photo / Video">📷</button>
+      <button class="type-btn" data-type="link" onclick="switchType(this)" title="Link">🔗</button>
+      <button class="type-btn" data-type="voice" onclick="switchType(this)" title="Voice note">🎙️</button>
+    </div>
+
+    <!-- Text -->
+    <div id="text-compose" class="compose-input-row">
+      <textarea id="compose-text" placeholder="write something…" rows="1"
+        oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="submitPost()" id="send-btn">↑</button>
+    </div>
+
+    <!-- Photo/Video -->
+    <div id="media-compose">
+      <label class="media-upload-label">
+        <span>📎</span> choose photo or video
+        <input type="file" id="media-file" accept="image/*,video/*" onchange="previewMedia(this)">
+      </label>
+      <img id="media-preview" alt="preview">
+      <input type="text" id="caption-input" placeholder="add a caption…">
+      <div class="compose-input-row" style="justify-content:flex-end">
+        <button class="send-btn" onclick="submitPost()">↑</button>
+      </div>
+    </div>
+
+    <!-- Link -->
+    <div id="link-compose">
+      <input type="url" id="link-url-input" placeholder="https://…">
+      <div class="compose-input-row" style="justify-content:flex-end">
+        <button class="send-btn" onclick="submitPost()">↑</button>
+      </div>
+    </div>
+
+    <!-- Voice -->
+    <div id="voice-compose">
+      <button class="record-btn" id="record-btn" onclick="toggleRecording()">
+        <span class="record-dot"></span>
+        <span id="record-label">tap to record</span>
+      </button>
+      <div class="compose-input-row" style="justify-content:flex-end">
+        <button class="send-btn" id="voice-send-btn" onclick="submitPost()" disabled>↑</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://viynmxsujnhmdfsezyzm.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpeW5teHN1am5obWRmc2V6eXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxODA2NTYsImV4cCI6MjA5MTc1NjY1Nn0.DIt-7Bij-Wea5SgYQDfFbeWdmu3Or6Mjagq-P_Nfit8';
+const PASSPHRASE = 'twobees';
+const EMOJIS = ['❤️','😂','😢','😍','😮','🔥','✨','🥺','😭','💛'];
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentType = 'text';
+let mediaFile = null;
+let audioBlob = null;
+let mediaRecorder = null;
+let recordingChunks = [];
+let isRecording = false;
+let openPickerPostId = null;
+
+// ── IDENTITY
+function selectIdentity(btn) {
+  document.querySelectorAll('.identity-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  currentUser = btn.dataset.name;
+}
+
+function attemptLogin() {
+  const val = document.getElementById('passphrase-input').value.trim();
+  const err = document.getElementById('login-error');
+  const inp = document.getElementById('passphrase-input');
+  err.textContent = '';
+  inp.classList.remove('error');
+  if (!currentUser) { err.textContent = 'choose who you are first'; return; }
+  if (val !== PASSPHRASE) {
+    err.textContent = 'wrong passphrase';
+    inp.classList.add('error');
+    return;
+  }
+  sessionStorage.setItem('wall-user', currentUser);
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('identity-display').textContent = currentUser;
+  initApp();
+}
+
+// ── APP INIT
+async function initApp() {
+  console.log(`[wall] init — user: ${currentUser}, supabase: ${sb ? 'connected' : 'missing'}`);
+  await loadPosts();
+  subscribeRealtime();
+}
+
+// ── LOAD POSTS
+async function loadPosts() {
+  const { data: posts, error } = await sb.from('posts').select('*').order('created_at', { ascending: true });
+  if (error) { console.error(error); return; }
+  const { data: reactions } = await sb.from('reactions').select('*');
+  renderFeed(posts, reactions || []);
+}
+
+function renderFeed(posts, reactions) {
+  const feed = document.getElementById('feed');
+  if (!posts.length) {
+    feed.innerHTML = '<div class="empty-state"><p>your wall is empty.<br>post something ✦</p></div>';
+    return;
+  }
+  feed.innerHTML = '';
+  posts.forEach((p, idx) => {
+    const myReactions = reactions.filter(r => r.post_id === p.id && r.author === currentUser).map(r => r.emoji);
+    const allReactions = reactions.filter(r => r.post_id === p.id);
+    feed.appendChild(buildPostEl(p, allReactions, myReactions, idx));
+  });
+  scrollToBottom();
+}
+
+function buildPostEl(post, allReactions, myReactions, idx) {
+  const wrapper = document.createElement('div');
+  const isMine = post.author === currentUser;
+  wrapper.className = `post-wrapper ${isMine ? 'mine' : 'theirs'}`;
+  wrapper.dataset.postId = post.id;
+  wrapper.style.zIndex = idx + 1;
+
+  const tilt = (post.rotation || 0).toFixed(1);
+  const xOff = (post.x_offset || 0).toFixed(1);
+
+  const inner = document.createElement('div');
+  inner.className = 'post-card';
+  inner.style.transform = `rotate(${tilt}deg) translateX(${xOff}px)`;
+
+  // Card content
+  let cardHtml = '';
+  if (post.type === 'text') {
+    cardHtml = `<div class="note-card"><div class="tape"></div>${escHtml(post.content)}</div>`;
+  } else if (post.type === 'photo') {
+    cardHtml = `<div class="polaroid-card">
+      <img class="polaroid-img" src="${post.media_url}" alt="photo" loading="lazy">
+      <div class="polaroid-caption">${escHtml(post.content || '')}</div>
+    </div>`;
+  } else if (post.type === 'video') {
+    cardHtml = `<div class="polaroid-card">
+      <video class="polaroid-video" src="${post.media_url}" controls playsinline></video>
+      <div class="polaroid-caption">${escHtml(post.content || '')}</div>
+    </div>`;
+  } else if (post.type === 'voice') {
+    cardHtml = buildVoiceCardHtml(post);
+  } else if (post.type === 'link') {
+    cardHtml = buildLinkCardHtml(post);
+  }
+
+  // Reactions
+  const reactionMap = {};
+  allReactions.forEach(r => { reactionMap[r.emoji] = (reactionMap[r.emoji] || 0) + 1; });
+  const reactionsHtml = Object.entries(reactionMap).map(([emoji, count]) => {
+    const mine = myReactions.includes(emoji);
+    return `<button class="reaction-chip ${mine ? 'mine' : ''}" onclick="toggleReaction('${post.id}','${emoji}')">${emoji}<span class="reaction-count">${count}</span></button>`;
+  }).join('');
+
+  const time = formatTime(post.created_at);
+
+  inner.innerHTML = `
+    ${cardHtml}
+    <div class="reactions-row" id="reactions-${post.id}">
+      ${reactionsHtml}
+      <button class="add-reaction" onclick="openEmojiPicker(event,'${post.id}')">+</button>
+    </div>
+    <div class="post-meta">${post.author} · ${time}</div>
+  `;
+
+  wrapper.appendChild(inner);
+  return wrapper;
+}
+
+function buildVoiceCardHtml(post) {
+  const bars = Array.from({length: 20}, (_, i) => {
+    const h = 20 + Math.sin(i * 0.8 + (post.id.charCodeAt(0) || 0)) * 14;
+    return `<div class="voice-bar" style="height:${h}px"></div>`;
+  }).join('');
+  return `<div class="voice-card">
+    <div class="voice-inner">
+      <button class="voice-play" onclick="playVoice(this,'${post.media_url}')">▶</button>
+      <div class="voice-waveform">${bars}</div>
+      <span class="voice-time">0:00</span>
+    </div>
+  </div>`;
+}
+
+function buildLinkCardHtml(post) {
+  const preview = post.link_preview || {};
+  const domain = (() => { try { return new URL(post.link_url).hostname.replace('www.',''); } catch { return post.link_url; } })();
+  const imgHtml = preview.image ? `<img class="link-preview-img" src="${preview.image}" alt="" onerror="this.classList.add('hidden')">` : '';
+  return `<a class="link-card" href="${post.link_url}" target="_blank" rel="noopener">
+    ${imgHtml}
+    <div class="link-info">
+      <div class="link-domain">${escHtml(domain)}</div>
+      <div class="link-title">${escHtml(preview.title || post.link_url)}</div>
+    </div>
+  </a>`;
+}
+
+// ── REALTIME
+function subscribeRealtime() {
+  sb.channel('wall').on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => loadPosts())
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'reactions' }, () => loadPosts())
+    .subscribe();
+}
+
+// ── COMPOSE TYPE SWITCH
+function switchType(btn) {
+  document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentType = btn.dataset.type;
+  ['text','media','link','voice'].forEach(t => {
+    const el = document.getElementById(`${t}-compose`);
+    if (el) el.classList.remove('active');
+    if (el) el.style.display = 'none';
+  });
+  const map = { text: 'text', photo: 'media', video: 'media', link: 'link', voice: 'voice' };
+  const target = document.getElementById(`${map[currentType]}-compose`);
+  if (target) { target.style.display = 'flex'; target.classList.add('active'); }
+  // fix text default
+  if (currentType === 'text') {
+    document.getElementById('text-compose').style.display = 'flex';
+  }
+}
+
+// ensure text is default visible
+document.getElementById('text-compose').style.display = 'flex';
+['media','link','voice'].forEach(t => { document.getElementById(`${t}-compose`).style.display = 'none'; });
+
+// ── SUBMIT POST
+async function submitPost() {
+  const tilt = (Math.random() * 4 - 2).toFixed(2);
+  const xOff = (Math.random() * 10 - 5).toFixed(2);
+  let postData = { author: currentUser, rotation: parseFloat(tilt), x_offset: parseFloat(xOff) };
+
+  if (currentType === 'text') {
+    const text = document.getElementById('compose-text').value.trim();
+    if (!text) return;
+    postData.type = 'text'; postData.content = text;
+
+  } else if (currentType === 'photo' || currentType === 'video') {
+    if (!mediaFile) return;
+    const ext = mediaFile.name.split('.').pop();
+    const path = `${currentUser}/${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('media').upload(path, mediaFile);
+    if (upErr) { console.error('[wall] media upload failed:', upErr); alert('Upload failed: ' + upErr.message); return; }
+    const { data: urlData } = sb.storage.from('media').getPublicUrl(path);
+    console.log('[wall] media uploaded:', urlData.publicUrl);
+    postData.type = mediaFile.type.startsWith('video') ? 'video' : 'photo';
+    postData.media_url = urlData.publicUrl;
+    postData.content = document.getElementById('caption-input').value.trim();
+
+  } else if (currentType === 'link') {
+    const url = document.getElementById('link-url-input').value.trim();
+    if (!url) return;
+    postData.type = 'link'; postData.link_url = url;
+    postData.link_preview = await fetchLinkPreview(url);
+
+  } else if (currentType === 'voice') {
+    if (!audioBlob) return;
+    const path = `${currentUser}/voice-${Date.now()}.webm`;
+    const { error: upErr } = await sb.storage.from('media').upload(path, audioBlob, { contentType: 'audio/webm' });
+    if (upErr) { console.error('[wall] voice upload failed:', upErr); alert('Upload failed: ' + upErr.message); return; }
+    const { data: urlData } = sb.storage.from('media').getPublicUrl(path);
+    console.log('[wall] voice uploaded:', urlData.publicUrl);
+    postData.type = 'voice'; postData.media_url = urlData.publicUrl;
+  }
+
+  await sb.from('posts').insert([postData]);
+  resetCompose();
+}
+
+function resetCompose() {
+  document.getElementById('compose-text').value = '';
+  document.getElementById('compose-text').style.height = 'auto';
+  document.getElementById('caption-input').value = '';
+  document.getElementById('link-url-input').value = '';
+  document.getElementById('media-preview').style.display = 'none';
+  document.getElementById('media-file').value = '';
+  mediaFile = null; audioBlob = null;
+  document.getElementById('record-label').textContent = 'tap to record';
+  document.getElementById('record-btn').classList.remove('recording');
+  document.getElementById('voice-send-btn').disabled = true;
+}
+
+// ── LINK PREVIEW (via allorigins proxy)
+async function fetchLinkPreview(url) {
+  try {
+    const proxy = `https://allorigins.win/get?disableCache=true&url=${encodeURIComponent(url)}`;
+    const res = await fetch(proxy);
+    const json = await res.json();
+    const html = json.contents;
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+    const title = doc.querySelector('meta[property="og:title"]')?.content
+      || doc.querySelector('title')?.textContent || url;
+    const image = doc.querySelector('meta[property="og:image"]')?.content || '';
+    return { title, image };
+  } catch { return { title: url, image: '' }; }
+}
+
+// ── MEDIA PREVIEW
+function previewMedia(input) {
+  const file = input.files[0];
+  if (!file) return;
+  mediaFile = file;
+  currentType = file.type.startsWith('video') ? 'video' : 'photo';
+  const preview = document.getElementById('media-preview');
+  preview.src = URL.createObjectURL(file);
+  preview.style.display = 'block';
+}
+
+// ── VOICE RECORDING
+async function toggleRecording() {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      recordingChunks = [];
+      mediaRecorder.ondataavailable = e => recordingChunks.push(e.data);
+      mediaRecorder.onstop = () => {
+        audioBlob = new Blob(recordingChunks, { type: 'audio/webm' });
+        document.getElementById('voice-send-btn').disabled = false;
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('record-btn').classList.add('recording');
+      document.getElementById('record-label').textContent = 'recording… tap to stop';
+    } catch { alert('microphone access needed'); }
+  } else {
+    mediaRecorder.stop();
+    isRecording = false;
+    document.getElementById('record-btn').classList.remove('recording');
+    document.getElementById('record-label').textContent = 'recorded ✓';
+  }
+}
+
+// ── VOICE PLAYBACK
+const audioPlayers = {};
+function playVoice(btn, url) {
+  if (audioPlayers[url] && !audioPlayers[url].paused) {
+    audioPlayers[url].pause();
+    btn.textContent = '▶';
+    return;
+  }
+  if (!audioPlayers[url]) audioPlayers[url] = new Audio(url);
+  audioPlayers[url].play();
+  btn.textContent = '⏸';
+  audioPlayers[url].onended = () => { btn.textContent = '▶'; };
+}
+
+// ── REACTIONS
+async function toggleReaction(postId, emoji) {
+  const { data: existing } = await sb.from('reactions')
+    .select('id').eq('post_id', postId).eq('author', currentUser).eq('emoji', emoji);
+  if (existing && existing.length) {
+    await sb.from('reactions').delete().eq('id', existing[0].id);
+  } else {
+    await sb.from('reactions').insert([{ post_id: postId, author: currentUser, emoji }]);
+  }
+}
+
+function openEmojiPicker(e, postId) {
+  e.stopPropagation();
+  // close any open
+  document.querySelectorAll('.emoji-picker').forEach(p => p.remove());
+  if (openPickerPostId === postId) { openPickerPostId = null; return; }
+  openPickerPostId = postId;
+
+  const picker = document.createElement('div');
+  picker.className = 'emoji-picker';
+  EMOJIS.forEach(em => {
+    const btn = document.createElement('span');
+    btn.className = 'emoji-opt';
+    btn.textContent = em;
+    btn.onclick = (ev) => { ev.stopPropagation(); toggleReaction(postId, em); picker.remove(); openPickerPostId = null; };
+    picker.appendChild(btn);
+  });
+
+  const wrapper = document.querySelector(`[data-post-id="${postId}"]`);
+  if (wrapper) { wrapper.style.position = 'relative'; wrapper.appendChild(picker); }
+}
+
+document.addEventListener('click', () => {
+  document.querySelectorAll('.emoji-picker').forEach(p => p.remove());
+  openPickerPostId = null;
+});
+
+// ── HELPERS
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function scrollToBottom() {
+  const feed = document.getElementById('feed');
+  feed.scrollTop = feed.scrollHeight;
+}
+
+function formatTime(ts) {
+  const d = new Date(ts);
+  const now = new Date();
+  const diff = now - d;
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return `${Math.floor(diff/60000)}m ago`;
+  if (diff < 86400000) return `${Math.floor(diff/3600000)}h ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
+function escHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── iOS KEYBOARD: keep compose bar above keyboard
+if (window.visualViewport) {
+  const composeBar = document.getElementById('compose-bar');
+  const feed = document.getElementById('feed');
+  window.visualViewport.addEventListener('resize', () => {
+    const offset = window.innerHeight - window.visualViewport.height;
+    composeBar.style.transform = `translateY(-${offset}px)`;
+    feed.style.paddingBottom = `calc(7.5rem + ${offset}px)`;
+    scrollToBottom();
+  });
+  window.visualViewport.addEventListener('scroll', () => {
+    const offset = window.innerHeight - window.visualViewport.height;
+    composeBar.style.transform = `translateY(-${offset}px)`;
+  });
+}
+
+// ── SESSION RESTORE
+const savedUser = sessionStorage.getItem('wall-user');
+if (savedUser) {
+  currentUser = savedUser;
+  document.getElementById('login-screen').classList.add('hide');
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('identity-display').textContent = currentUser;
+  initApp();
+}
+</script>
+</body>
+</html>
