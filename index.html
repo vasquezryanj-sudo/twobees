@@ -788,6 +788,217 @@
   #feed::-webkit-scrollbar, .tab-view::-webkit-scrollbar { width: 4px; }
   #feed::-webkit-scrollbar-track, .tab-view::-webkit-scrollbar-track { background: transparent; }
   #feed::-webkit-scrollbar-thumb, .tab-view::-webkit-scrollbar-thumb { background: var(--linen-deep); border-radius: 4px; }
+
+  /* ── BEECAL VIEW ── */
+  #cal-view { padding: 0.75rem 0.75rem 5rem; }
+
+  .cal-month {
+    margin-bottom: 1.75rem;
+  }
+  .cal-month-title {
+    font-family: 'Caveat', cursive;
+    font-size: 1.35rem;
+    color: var(--ink);
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--linen-deep);
+  }
+  .cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .cal-day-header {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--ink-faint);
+    text-align: center;
+    padding: 0.25rem 0;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 0.3rem 0.15rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+    min-height: 42px;
+    justify-content: center;
+    position: relative;
+  }
+  .cal-day:hover:not(.outside-range):not(.empty) {
+    background: var(--terracotta-pale);
+  }
+  .cal-day.outside-range {
+    opacity: 0.25;
+    cursor: default;
+    pointer-events: none;
+  }
+  .cal-day.empty {
+    pointer-events: none;
+  }
+  .cal-day.today .day-num {
+    background: var(--terracotta);
+    color: white;
+    border-radius: 50%;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .day-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--ink);
+    line-height: 1;
+    width: 24px; height: 24px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .cal-day.outside-range .day-num { color: var(--ink-faint); }
+  .day-dot {
+    width: 5px; height: 5px;
+    background: var(--terracotta);
+    border-radius: 50%;
+    margin-top: 2px;
+  }
+  .day-dot-placeholder {
+    width: 5px; height: 5px;
+    margin-top: 2px;
+  }
+
+  /* ── DAY POPUP ── */
+  .day-popup {
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(58,48,40,0.4);
+    display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.2s;
+  }
+  .day-popup.open {
+    opacity: 1; pointer-events: all;
+  }
+  .day-popup-inner {
+    background: var(--paper);
+    border-radius: 12px 12px 0 0;
+    padding: 1.25rem 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+    width: 100%;
+    max-height: 75vh;
+    overflow-y: auto;
+    transform: translateY(30px);
+    transition: transform 0.25s ease;
+    box-shadow: 0 -4px 24px rgba(58,48,40,0.15);
+  }
+  .day-popup.open .day-popup-inner {
+    transform: translateY(0);
+  }
+  .day-popup-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+  .day-popup-date {
+    font-family: 'Caveat', cursive;
+    font-size: 1.4rem;
+    color: var(--ink);
+  }
+  .day-popup-close {
+    background: var(--linen-deep);
+    border: none;
+    border-radius: 50%;
+    width: 28px; height: 28px;
+    font-size: 1rem;
+    color: var(--ink-light);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s;
+  }
+  .day-popup-close:hover { background: var(--terracotta-pale); }
+
+  .cal-notes-list {
+    margin-bottom: 1rem;
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .cal-note-item {
+    background: var(--paper-warm);
+    border-radius: 4px;
+    padding: 0.6rem 0.75rem;
+    border-left: 2px solid var(--terracotta-light);
+  }
+  .cal-note-author {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    color: var(--terracotta);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 0.25rem;
+  }
+  .cal-note-content {
+    font-family: 'Caveat', cursive;
+    font-size: 1.1rem;
+    color: var(--ink);
+    line-height: 1.4;
+  }
+  .cal-notes-empty {
+    font-family: 'Caveat', cursive;
+    font-size: 1rem;
+    color: var(--ink-faint);
+    text-align: center;
+    padding: 0.75rem 0;
+  }
+
+  .cal-note-compose {
+    display: flex; flex-direction: column; gap: 0.5rem;
+    border-top: 1px solid var(--linen-deep);
+    padding-top: 0.75rem;
+  }
+  #cal-note-input {
+    width: 100%;
+    border: 1.5px solid var(--linen-deep);
+    background: var(--linen);
+    border-radius: 4px;
+    padding: 0.6rem 0.75rem;
+    font-family: 'Caveat', cursive;
+    font-size: 1.05rem;
+    color: var(--ink);
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+    line-height: 1.4;
+  }
+  #cal-note-input:focus { border-color: var(--terracotta); }
+  #cal-note-input::placeholder { color: var(--ink-faint); }
+  .cal-note-save {
+    align-self: flex-end;
+    padding: 0.5rem 1.25rem;
+    background: var(--terracotta);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .cal-note-save:hover { background: #b5593e; }
+
+  /* ── CAL HEADER WIDGET ── */
+  .cal-header-widget {
+    display: flex; align-items: center; gap: 0.3rem;
+    padding: 0.3rem 0.6rem;
+    background: var(--terracotta-pale);
+    border: 1px solid var(--terracotta-light);
+    border-radius: 20px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--terracotta);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .cal-header-widget:hover { background: var(--terracotta); color: white; }
 </style>
 </head>
 <body>
@@ -817,9 +1028,12 @@
       <img src="bee.jpg" alt="" class="header-logo">
       <div class="header-title">two bees</div>
     </div>
-    <div class="header-identity">
-      <span class="rt-dot"></span>
-      <span id="identity-display"></span>
+    <div style="display:flex;align-items:center;gap:0.6rem;">
+      <button class="cal-header-widget" onclick="openCalTab()">🗓 beecal</button>
+      <div class="header-identity">
+        <span class="rt-dot"></span>
+        <span id="identity-display"></span>
+      </div>
     </div>
   </header>
 
@@ -827,6 +1041,7 @@
     <button class="tab-btn active" data-tab="wall" onclick="switchTab(this)">wall</button>
     <button class="tab-btn" data-tab="photos" onclick="switchTab(this)">photos</button>
     <button class="tab-btn" data-tab="voice" onclick="switchTab(this)">voice</button>
+    <button class="tab-btn" data-tab="cal" id="cal-tab-btn" onclick="switchTab(this)">beecal</button>
   </nav>
 
   <div id="feed" class="tab-view active">
@@ -838,6 +1053,7 @@
 
   <div id="photos-view" class="tab-view"></div>
   <div id="voice-view" class="tab-view"></div>
+  <div id="cal-view" class="tab-view"></div>
 
   <div id="compose-bar">
     <div class="compose-type-row">
@@ -891,7 +1107,7 @@
 <script>
 const SUPABASE_URL = 'https://viynmxsujnhmdfsezyzm.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpeW5teHN1am5obWRmc2V6eXptIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzYxODA2NTYsImV4cCI6MjA5MTc1NjY1Nn0.DIt-7Bij-Wea5SgYQDfFbeWdmu3Or6Mjagq-P_Nfit8';
-const PASSPHRASE = 'twobees';
+const PASSPHRASE = 'onecup';
 const EMOJIS = ['❤️','😂','😢','😍','😮','🔥','✨','🥺','😭','💛'];
 
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
@@ -901,6 +1117,9 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
 let currentUser = null;
 let currentType = 'text';
 let currentTab = 'wall';
+let cachedCalNotes = [];
+const CAL_START = new Date(2026, 3, 20); // April 20, 2026
+const CAL_END   = new Date(2026, 8, 14); // September 14, 2026
 let mediaFile = null;
 let audioBlob = null;
 let mediaRecorder = null;
@@ -941,6 +1160,7 @@ function attemptLogin() {
 async function initApp() {
   console.log(`[wall] init — user: ${currentUser}, supabase: ${sb ? 'connected' : 'missing'}`);
   await loadPosts();
+  await loadCalNotes();
   subscribeRealtime();
 }
 
@@ -1063,7 +1283,7 @@ function switchTab(btn) {
   btn.classList.add('active');
   currentTab = btn.dataset.tab;
   document.querySelectorAll('.tab-view').forEach(v => v.classList.remove('active'));
-  const viewId = { wall: 'feed', photos: 'photos-view', voice: 'voice-view' }[currentTab];
+  const viewId = { wall: 'feed', photos: 'photos-view', voice: 'voice-view', cal: 'cal-view' }[currentTab];
   document.getElementById(viewId).classList.add('active');
   document.getElementById('compose-bar').style.display = currentTab === 'wall' ? '' : 'none';
   renderActiveTab();
@@ -1076,7 +1296,14 @@ function renderActiveTab() {
     renderPhotosView(cachedPosts);
   } else if (currentTab === 'voice') {
     renderVoiceView(cachedPosts);
+  } else if (currentTab === 'cal') {
+    renderCalView();
   }
+}
+
+function openCalTab() {
+  const calBtn = document.getElementById('cal-tab-btn');
+  switchTab(calBtn);
 }
 
 function groupByDate(posts) {
@@ -1204,6 +1431,14 @@ function subscribeRealtime() {
     .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'reactions' }, (payload) => {
       console.log('[wall] realtime DELETE received — reactions:', payload);
       loadPosts();
+    })
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'cal_notes' }, (payload) => {
+      console.log('[cal] realtime INSERT received — cal_notes:', payload);
+      loadCalNotes();
+    })
+    .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'cal_notes' }, (payload) => {
+      console.log('[cal] realtime DELETE received — cal_notes:', payload);
+      loadCalNotes();
     })
     .subscribe((status, err) => {
       console.log('[wall] realtime subscription status:', status, err || '');
@@ -1410,6 +1645,152 @@ document.addEventListener('click', () => {
   document.querySelectorAll('.emoji-picker').forEach(p => p.remove());
   openPickerPostId = null;
 });
+
+// ── BEECAL
+async function loadCalNotes() {
+  const { data, error } = await sb.from('cal_notes').select('*').order('created_at', { ascending: true });
+  if (error) { console.error('[cal] load error:', error); return; }
+  cachedCalNotes = data || [];
+  if (currentTab === 'cal') renderCalView();
+}
+
+function renderCalView() {
+  const view = document.getElementById('cal-view');
+  let html = `<div style="font-family:'DM Mono',monospace;font-size:0.6rem;color:var(--ink-faint);letter-spacing:0.1em;text-transform:uppercase;text-align:center;padding:0.5rem 0 1rem;">Apr 20 – Sep 14, 2026</div>`;
+  // Months: April (3) through September (8)
+  for (let m = 3; m <= 8; m++) {
+    html += buildMonthHtml(new Date(2026, m, 1));
+  }
+  view.innerHTML = html;
+}
+
+function buildMonthHtml(monthStart) {
+  const year = monthStart.getFullYear();
+  const month = monthStart.getMonth();
+  const monthName = monthStart.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
+
+  let html = `<div class="cal-month">
+    <div class="cal-month-title">${monthName}</div>
+    <div class="cal-grid">
+      <div class="cal-day-header">Su</div>
+      <div class="cal-day-header">Mo</div>
+      <div class="cal-day-header">Tu</div>
+      <div class="cal-day-header">We</div>
+      <div class="cal-day-header">Th</div>
+      <div class="cal-day-header">Fr</div>
+      <div class="cal-day-header">Sa</div>`;
+
+  for (let i = 0; i < firstDay; i++) {
+    html += '<div class="cal-day empty"></div>';
+  }
+
+  const todayStr = new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD
+  for (let d = 1; d <= daysInMonth; d++) {
+    const date = new Date(year, month, d);
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const inRange = date >= CAL_START && date <= CAL_END;
+    const isToday = dateStr === todayStr;
+    const hasNotes = cachedCalNotes.some(n => n.date === dateStr);
+
+    const classes = ['cal-day'];
+    if (!inRange) classes.push('outside-range');
+    if (isToday) classes.push('today');
+
+    const clickAttr = inRange ? `onclick="openDayPopup('${dateStr}')"` : '';
+    html += `<div class="${classes.join(' ')}" ${clickAttr}>
+      <span class="day-num">${d}</span>
+      ${hasNotes ? '<div class="day-dot"></div>' : '<div class="day-dot-placeholder"></div>'}
+    </div>`;
+  }
+
+  html += '</div></div>';
+  return html;
+}
+
+let activeDayPopupDate = null;
+
+function openDayPopup(dateStr) {
+  activeDayPopupDate = dateStr;
+  let popup = document.getElementById('day-popup');
+  if (!popup) {
+    popup = document.createElement('div');
+    popup.id = 'day-popup';
+    popup.className = 'day-popup';
+    popup.addEventListener('click', (e) => { if (e.target === popup) closeDayPopup(); });
+    document.body.appendChild(popup);
+  }
+
+  const notes = cachedCalNotes.filter(n => n.date === dateStr);
+  const [yr, mo, dy] = dateStr.split('-').map(Number);
+  const displayDate = new Date(yr, mo - 1, dy).toLocaleDateString('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric'
+  });
+
+  const notesHtml = notes.length
+    ? notes.map(n => `
+        <div class="cal-note-item">
+          <div class="cal-note-author">${escHtml(n.author)}</div>
+          <div class="cal-note-content">${escHtml(n.content)}</div>
+        </div>`).join('')
+    : '<div class="cal-notes-empty">nothing here yet — add a note ↓</div>';
+
+  popup.innerHTML = `
+    <div class="day-popup-inner">
+      <div class="day-popup-header">
+        <div class="day-popup-date">${displayDate}</div>
+        <button class="day-popup-close" onclick="closeDayPopup()">×</button>
+      </div>
+      <div class="cal-notes-list">${notesHtml}</div>
+      <div class="cal-note-compose">
+        <textarea id="cal-note-input" placeholder="add a note for this day…" rows="2"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();saveCalNote('${dateStr}');}"></textarea>
+        <button class="cal-note-save" onclick="saveCalNote('${dateStr}')">save</button>
+      </div>
+    </div>`;
+
+  // Force reflow then add open class for animation
+  requestAnimationFrame(() => {
+    popup.classList.add('open');
+    popup.querySelector('#cal-note-input').focus();
+  });
+}
+
+function closeDayPopup() {
+  const popup = document.getElementById('day-popup');
+  if (popup) {
+    popup.classList.remove('open');
+    activeDayPopupDate = null;
+  }
+}
+
+async function saveCalNote(dateStr) {
+  const input = document.getElementById('cal-note-input');
+  const content = input.value.trim();
+  if (!content) return;
+
+  const btn = document.querySelector('.cal-note-save');
+  if (btn) btn.disabled = true;
+
+  const { error } = await sb.from('cal_notes').insert([{
+    date: dateStr,
+    author: currentUser,
+    content
+  }]);
+
+  if (error) {
+    console.error('[cal] save error:', error);
+    alert('Failed to save note: ' + error.message);
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  input.value = '';
+  await loadCalNotes();
+  // Refresh popup with updated notes
+  openDayPopup(dateStr);
+}
 
 // ── HELPERS
 function autoResize(el) {
