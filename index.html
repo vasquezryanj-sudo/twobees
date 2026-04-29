@@ -1527,6 +1527,12 @@ async function submitPost() {
   console.log('[wall] insert result:', JSON.stringify({ data: insertData, error: insertErr }));
   if (insertErr) { console.error('[wall] insert failed:', insertErr); alert('Post failed: ' + insertErr.message); return; }
   resetCompose();
+  // Fallback: manually reload after a short delay to guarantee the new post appears,
+  // even if the realtime INSERT event doesn't fire.
+  setTimeout(async () => {
+    await loadPosts();
+    scrollToBottom(true);
+  }, 500);
 }
 
 function resetCompose() {
@@ -1798,9 +1804,13 @@ function autoResize(el) {
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
 }
 
-function scrollToBottom() {
+function scrollToBottom(smooth = false) {
   const feed = document.getElementById('feed');
-  feed.scrollTop = feed.scrollHeight;
+  if (smooth) {
+    feed.scrollTo({ top: feed.scrollHeight, behavior: 'smooth' });
+  } else {
+    feed.scrollTop = feed.scrollHeight;
+  }
 }
 
 function getUserTimezone() {
